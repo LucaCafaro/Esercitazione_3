@@ -12,6 +12,7 @@ using namespace std;
 #include "TString.h"
 #include "TMath.h"
 #include "TLorentzVector.h"
+#include "TTree.h"
 
 int main(int argc, char **argv){
 
@@ -59,7 +60,20 @@ int main(int argc, char **argv){
 	h1_meas.push_back(hm4);
 	TH1F h2("h2", "Lab angles", 100, 2.9, 3.3);
 	TH1F pi("pi", "Module", 100, 0, 6);
-	
+
+	//TTree
+	TTree* tree = new TTree("datatree", "tree containing our data");
+	int nDau=2;
+	double nmass[]={m_pi, m_k};
+	double p[nDau];
+	double Theta[nDau];
+	double Phi[nDau];
+	tree->Branch("p_B", &p_B,  "p_B/D");
+	tree->Branch("nDau", &nDau, "nDau/I");
+	tree->Branch("nmass", nmass,  "nmass[nDau]/D");
+	tree->Branch("p", p, "p[nDau]/D");
+	tree->Branch("theta", Theta,  "theta[nDau]/D");
+	tree->Branch("phi", Phi, "phi[nDau]/D");
 
 
 	//chiamata di TRandom3
@@ -80,6 +94,7 @@ int main(int argc, char **argv){
 	  p4_pi.SetPxPyPzE(x,y,z,sqrt(p_cm*p_cm+m_pi*m_pi)); //4-impulso pione centro di massa
 	  
 	  p4_k.SetPxPyPzE(-x,-y,-z,sqrt(p_cm*p_cm+m_k*m_k)); //4-impulso kaone centro di massa
+
 	  
 	  //massa invariante
 	  p_t=p4_pi+p4_k; //4-impulso totale
@@ -93,6 +108,8 @@ int main(int argc, char **argv){
 	  //calcolo angoli
 	  p1 = p4_pi.Vect(); //3-vettori
 	  p2 = p4_k.Vect();
+
+	  
 			
 	  angle = acos(p1.Dot(p2)/sqrt(p1.Dot(p1)*p2.Dot(p2)));
 	  h2.Fill(angle);
@@ -101,7 +118,14 @@ int main(int argc, char **argv){
 	  p_pi_O = sqrt(p1.Dot(p1));
 	  p_k_O = sqrt(p2.Dot(p2));
 
-
+	  //si salvano gli eventi dei branch del TTree (SR lab)
+	  p[0]=p_pi_O;
+	  p[1]=p_k_O;
+	  Theta[0]=p1.Theta();
+	  Theta[1]=p2.Theta();
+	  Phi[0]=p1.Phi();
+	  Phi[1]=p2.Phi();
+	  tree->Fill();
 
 	  //misura di p_i e p_k a resol=0.03
 	  p_pi_meas = gen->Gaus(p_pi_O,resol[1]*p_pi_O);
@@ -121,7 +145,9 @@ int main(int argc, char **argv){
 	}
 	h2.Write();
 	pi.Write();
-	
+
+	tree->Write();
+	tree->Print();
 
 	//plotting mi
 	TCanvas canv1("canv1", "Canvas 1", 1280, 1024);
